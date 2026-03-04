@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+*.db
+*.xlsx
+.venv/
+venv/
+.DS_Store
+cron.log
+logs/
+ui_settings.json

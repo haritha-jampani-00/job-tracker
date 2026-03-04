@@ -1,0 +1,114 @@
+# ──────────────────────────────────────────────
+# Job Tracker Configuration
+# ──────────────────────────────────────────────
+
+search:
+  # List of roles to search for (all fetched in one run)
+  roles:
+    - "Data Engineer"
+    - "Software Engineer"
+    - "AI Engineer"
+
+  experience_range:
+    min_years: 0
+    max_years: 3
+
+  location: ""              # e.g. "San Francisco, CA" or "Remote"
+  remote_only: false
+
+  keywords:
+    must_have:
+      - python
+      - sql
+    nice_to_have:
+      - spark
+      - airflow
+      - dbt
+      - kafka
+      - snowflake
+      - aws
+      - gcp
+      - docker
+      - kubernetes
+      - tensorflow
+      - pytorch
+    avoid:
+      - principal
+      - staff
+      - director
+      - vp
+
+# ──────────────────────────────────────────────
+# Company boards to fetch from
+#
+# Greenhouse: https://boards-api.greenhouse.io/v1/boards/{slug}/jobs
+# Lever:      https://api.lever.co/v0/postings/{slug}?mode=json
+# Ashby:      https://api.ashbyhq.com/posting-api/job-board/{slug}
+# ──────────────────────────────────────────────
+companies:
+  greenhouse:
+    - airbnb
+    - airtable
+    - cloudflare
+    - coinbase
+    - databricks
+    - datadog
+    - discord
+    - figma
+    - gitlab
+    - hubspot
+    - instacart
+    - mongodb
+    - okta
+    - pinterest
+    - reddit
+    - robinhood
+    - stripe
+    - twilio
+    - twitch
+    - vercel
+
+  lever:
+    - plaid
+    - palantir
+    - neon
+    - zoox
+    - mistral
+
+  ashby:
+    - linear
+    - ramp
+    - notion
+    - clerk
+    - resend
+    - drata
+    - vanta
+    - posthog
+    - raycast
+
+# ──────────────────────────────────────────────
+# Startup portals (no company slugs needed)
+# Available: remoteok, weworkremotely, wellfound, yc
+# ──────────────────────────────────────────────
+startup_portals:
+  - weworkremotely
+  - wellfound
+  - yc
+
+# ──────────────────────────────────────────────
+# Auto-discover: find new company ATS boards
+# from YC directory by probing public APIs
+# ──────────────────────────────────────────────
+auto_discover:
+  enabled: true
+  sources:
+    - yc                    # workatastartup.com Algolia API
+  max_probes_per_run: 50    # limit probing to avoid hammering APIs
+
+# Resume configuration
+# Per-role PDFs go in resumes/ folder as: hj_resume_{normalized_role}.pdf
+# e.g. hj_resume_data_engineer.pdf, hj_resume_software_engineer.pdf
+resumes_dir: "resumes"
+
+# Legacy fallback (used if no per-role PDF found)
+resume_path: "resume.txt"

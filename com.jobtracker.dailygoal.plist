@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.jobtracker.dailygoal</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/harithajampani/anaconda3/bin/python</string>
+        <string>/Users/harithajampani/job-tracker/check_daily_goal.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/harithajampani/job-tracker</string>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>21</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/harithajampani/job-tracker/logs/daily_goal.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/harithajampani/job-tracker/logs/daily_goal_err.log</string>
+</dict>
+</plist>
