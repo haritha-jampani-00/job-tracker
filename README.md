@@ -6,16 +6,22 @@ Multi-role, resume-aware job aggregation app that fetches new postings from Gree
 
 - **Multi-role search** — search for "Data Engineer", "Software Engineer", "AI Engineer" in one run
 - Fetches from **Greenhouse**, **Lever**, and **Ashby** public APIs (34 companies preconfigured)
+- **Startup portals** — WeWorkRemotely, Wellfound, YC
+- **Auto-discovery** — finds new company boards from YC directory + custom company names
 - **4-component scoring** — Title match (20%) + Keyword overlap (40%) + Experience alignment (20%) + Tech stack (20%)
-- **Experience awareness** — detects seniority signals and aligns with your experience range
+- **Experience level detection** — detects Intern/Entry/Mid/Senior/Staff+ from job titles, filterable via sidebar
+- **Visa sponsorship detection** — scans descriptions for sponsorship language
 - **Cross-role deduplication** — one job matching multiple roles is stored once with all roles listed
+- **Job lifecycle tracking** — Discovered → Applied → Interviewing → Offer / Rejected / Withdrawn / Archived
+- **Daily application goal reminder** — email notification via Gmail if you haven't hit your target
+- **Dual database** — SQLite (local) or Supabase (cloud)
 - **Excel export** with hyperlinks, autofilter, frozen headers, and role tags
-- **Streamlit dashboard** with multi-role input, role filtering, and download
+- **Streamlit dashboard** with filters, progress bar, and interactive table
 - **CLI mode** for single runs or cron jobs
 - **Background scheduler** — auto-fetches every 30 minutes
 - **Pluggable LLM scoring** (off by default, zero cost)
 
-## Quick Start (macOS M2)
+## Quick Start (macOS)
 
 ### 1. Enter the project
 
@@ -23,20 +29,13 @@ Multi-role, resume-aware job aggregation app that fetches new postings from Gree
 cd ~/job-tracker
 ```
 
-### 2. Create a virtual environment
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-### 3. Install dependencies
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Configure
+### 3. Configure
 
 ```bash
 cp .env.example .env
@@ -55,11 +54,20 @@ search:
     max_years: 5
 ```
 
-### 5. Add your resume
+### 4. Add your resume
 
-Replace `resume.txt` with your actual resume in plain text.
+Place per-role PDF resumes in the `resumes/` folder:
 
-### 6. Run
+```
+resumes/
+  hj_resume_data_engineer.pdf
+  hj_resume_software_engineer.pdf
+  hj_resume_ai_engineer.pdf
+```
+
+Or upload via the Streamlit sidebar.
+
+### 5. Run
 
 **Option A: Streamlit UI**
 ```bash
@@ -81,16 +89,32 @@ python main.py --loop
 python main.py --run-once --roles "ML Engineer, Analytics Engineer"
 ```
 
-### 7. Optional: macOS cron job
+## Daily Application Goal Reminder
 
-```bash
-crontab -e
-```
+Get an email at 9 PM if you haven't applied to enough jobs today.
 
-Add (adjust paths):
-```
-*/30 * * * * cd ~/job-tracker && .venv/bin/python main.py --run-once >> cron.log 2>&1
-```
+### Setup
+
+1. Add to your `.env`:
+   ```
+   NOTIFY_EMAIL=your.email@gmail.com
+   GMAIL_APP_PASSWORD=your-app-password
+   DAILY_GOAL=15
+   NOTIFY_HOUR=21
+   ```
+
+2. Get a Gmail App Password: Google Account → Security → 2-Step Verification → App Passwords
+
+3. Install the daily cron (runs even without the app open):
+   ```bash
+   cp com.jobtracker.dailygoal.plist ~/Library/LaunchAgents/
+   launchctl load ~/Library/LaunchAgents/com.jobtracker.dailygoal.plist
+   ```
+
+4. Test manually:
+   ```bash
+   python check_daily_goal.py
+   ```
 
 ## Adding Roles
 
@@ -127,6 +151,8 @@ companies:
     - linear          # https://api.ashbyhq.com/posting-api/job-board/linear
 ```
 
+Or use the **Discover Companies** button in the UI to auto-find company boards by name.
+
 **Finding slugs:**
 - **Greenhouse**: `https://boards.greenhouse.io/{slug}`
 - **Lever**: `https://jobs.lever.co/{slug}`
@@ -147,21 +173,19 @@ The scoring engine is **local and deterministic** (zero API calls, zero cost). E
 
 Each component scores 0-100, then they're weighted to produce a final 0-100 score.
 
-### Experience Alignment
+### Experience Level Detection
 
-The engine detects seniority signals in titles and descriptions:
+The engine detects seniority from job titles:
 
-| Signal | Estimated Years |
-|--------|----------------|
-| Intern, Junior, Entry-level | 0 |
-| Mid-level | 3 |
-| Senior | 5 |
-| Lead | 7 |
-| Staff | 8 |
-| Principal | 10 |
-| Director, VP | 12-15 |
+| Level | Keywords |
+|-------|----------|
+| Intern | intern, internship |
+| Entry Level | junior, jr, entry-level, new grad, associate |
+| Mid Level | mid-level |
+| Senior | senior, sr |
+| Staff+ | staff, lead, principal, director, vp, fellow |
 
-If the JD suggests seniority beyond your `max_years + 5`, the job is flagged as "Way above range" and recommended to skip.
+Use the **Experience Levels** multiselect in the sidebar to show/hide levels.
 
 ### Recommendations
 
@@ -195,7 +219,6 @@ OPENAI_API_KEY=sk-...
 
 ### Streamlit won't start
 ```bash
-source .venv/bin/activate
 pip install streamlit
 ```
 
@@ -203,34 +226,40 @@ pip install streamlit
 - Dedup uses `(company + title + location)` as the key
 - If a company reposts with a slightly different title, it appears as new
 
-### Cron not running
-- Use full paths in crontab
-- Check `cron.log` for errors
-
 ## Project Structure
 
 ```
 job-tracker/
 ├── main.py                 # CLI entry point (--run-once / --loop)
-├── app.py                  # Streamlit dashboard (multi-role)
+├── app.py                  # Streamlit dashboard
 ├── config.yaml             # Roles, companies, keywords
-├── .env.example            # Environment variables
+├── check_daily_goal.py     # Standalone daily goal checker (for cron)
+├── com.jobtracker.dailygoal.plist  # macOS launchd config
+├── .env.example            # Environment variables template
 ├── requirements.txt
-├── resume.txt              # Your resume (plain text)
+├── resumes/                # Per-role PDF resumes
+│   └── hj_resume_data_engineer.pdf
+├── supabase_schema.sql     # Supabase table definitions
 ├── src/
 │   ├── config.py           # Multi-role config loader
-│   ├── models.py           # Job model (roles_matched, experience_alignment)
-│   ├── database.py         # SQLite with cross-role schema
-│   ├── pipeline.py         # Multi-role fetch-score-store pipeline
+│   ├── models.py           # Job model with lifecycle states
+│   ├── database.py         # SQLite backend
+│   ├── database_supabase.py # Supabase backend
+│   ├── pipeline.py         # Fetch → filter → score → store pipeline
 │   ├── dedup.py            # Cross-role dedup with role merging
-│   ├── filters.py          # Relevance, location, freshness, score
-│   ├── exporter.py         # Excel with Roles Matched column
-│   ├── scheduler.py        # APScheduler 30-min background
+│   ├── filters.py          # Relevance, experience, sponsorship, location
+│   ├── relevance.py        # Resume keyword extraction
+│   ├── resume_loader.py    # Per-role PDF resume loading
+│   ├── exporter.py         # Excel export
+│   ├── notifier.py         # Daily goal email reminder
+│   ├── scheduler.py        # APScheduler background jobs
+│   ├── slug_discovery.py   # Auto-discover company ATS boards
 │   ├── fetchers/
 │   │   ├── base.py         # Abstract base fetcher
 │   │   ├── greenhouse.py   # Greenhouse API
 │   │   ├── lever.py        # Lever API
-│   │   └── ashby.py        # Ashby API
+│   │   ├── ashby.py        # Ashby API
+│   │   └── startup/        # Portal fetchers (WWR, Wellfound, YC)
 │   └── scoring/
 │       ├── rule_based.py   # 4-component weighted scorer
 │       └── llm_scoring.py  # Optional LLM scorer

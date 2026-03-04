@@ -109,6 +109,3 @@ auto_discover:
 # Per-role PDFs go in resumes/ folder as: hj_resume_{normalized_role}.pdf
 # e.g. hj_resume_data_engineer.pdf, hj_resume_software_engineer.pdf
 resumes_dir: "resumes"
-
-# Legacy fallback (used if no per-role PDF found)
-resume_path: "resume.txt"
