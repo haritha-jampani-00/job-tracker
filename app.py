@@ -23,7 +23,7 @@ from src.scheduler import start_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
-st.set_page_config(page_title="Job Tracker", layout="wide")
+st.set_page_config(page_title="Job Tracker", page_icon="💼", layout="wide")
 
 # ── Settings persistence ──────────────────────────────────
 _SETTINGS_PATH = Path(__file__).resolve().parent / "ui_settings.json"
