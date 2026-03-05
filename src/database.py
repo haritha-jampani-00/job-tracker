@@ -279,9 +279,11 @@ class JobDB:
         self.conn.commit()
 
     def count_applications_today(self) -> int:
-        """Count jobs marked 'Applied' today (by applied_at date)."""
+        """Count jobs marked 'Applied' today (local time)."""
+        today = datetime.now().strftime("%Y-%m-%d")
         row = self.conn.execute(
-            "SELECT COUNT(*) as cnt FROM jobs WHERE DATE(applied_at) = DATE('now')"
+            "SELECT COUNT(*) as cnt FROM jobs WHERE DATE(applied_at) = ?",
+            (today,),
         ).fetchone()
         return row["cnt"] if row else 0
 

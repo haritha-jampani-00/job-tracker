@@ -170,16 +170,16 @@ class SupabaseJobDB:
         )
 
     def count_applications_today(self) -> int:
-        """Count jobs marked 'Applied' today (by applied_at date)."""
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        """Count jobs marked 'Applied' today (local time)."""
+        today = datetime.now().strftime("%Y-%m-%d")
         resp = (
             self.client.table("jobs")
-            .select("id", count="exact")
+            .select("id")
             .gte("applied_at", f"{today}T00:00:00")
-            .lt("applied_at", f"{today}T23:59:60")
+            .lt("applied_at", f"{today}T23:59:59")
             .execute()
         )
-        return resp.count if resp.count is not None else 0
+        return len(resp.data)
 
     def auto_archive_stale(self, days: int = 30) -> int:
         """Archive Discovered jobs older than `days` days."""

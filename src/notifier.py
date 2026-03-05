@@ -11,6 +11,7 @@ import os
 import smtplib
 import ssl
 from datetime import date
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from src.config import AppConfig, get_db
@@ -19,6 +20,53 @@ logger = logging.getLogger(__name__)
 
 _GMAIL_SMTP = "smtp.gmail.com"
 _GMAIL_PORT = 465
+
+_MOTIVATIONAL_QUOTES = [
+    "Every application is a step closer to the right opportunity.",
+    "You miss 100% of the jobs you don't apply to.",
+    "The best time to apply was yesterday. The second best time is now.",
+    "Small daily progress leads to big results.",
+    "Your future self will thank you for applying today.",
+    "Rejection is redirection. Keep applying.",
+    "The only way to guarantee failure is to stop trying.",
+    "One of these applications will change everything.",
+    "Discipline beats motivation. Apply even when you don't feel like it.",
+    "You're not just applying for jobs — you're building momentum.",
+    "Success is the sum of small efforts repeated day in and day out.",
+    "Don't stop when you're tired. Stop when you're hired.",
+    "Every 'no' gets you closer to a 'yes'.",
+    "Consistency is what transforms average into excellence.",
+    "The job search is a numbers game. Keep your numbers up.",
+    "Today's effort is tomorrow's opportunity.",
+    "You're one application away from a life-changing offer.",
+    "Trust the process. Results follow consistency.",
+    "Hard work beats talent when talent doesn't apply.",
+    "Winners are just people who didn't give up.",
+    "The grind is temporary. The career is forever.",
+    "Apply like your dream company is hiring today — because they might be.",
+    "Your next job won't find you. Go find it.",
+    "Showing up every day is the hardest part. You've got this.",
+    "No one ever regretted applying to too many jobs.",
+    "Stay hungry. Stay applying.",
+    "It only takes one 'yes' to make all the effort worth it.",
+    "Progress, not perfection. Just hit send.",
+    "The job market rewards the persistent, not the perfect.",
+    "Today is a great day to get closer to your goal.",
+]
+
+
+def _get_daily_quote() -> str:
+    """Pick a motivational quote based on the day of the year (rotates daily)."""
+    day = date.today().timetuple().tm_yday
+    return _MOTIVATIONAL_QUOTES[day % len(_MOTIVATIONAL_QUOTES)]
+
+
+def _progress_bar(current: int, goal: int, width: int = 20) -> str:
+    """Generate a text-based progress bar."""
+    pct = min(current / max(goal, 1), 1.0)
+    filled = round(width * pct)
+    bar = "#" * filled + "-" * (width - filled)
+    return f"[{bar}] {current}/{goal}"
 
 
 def send_daily_reminder(cfg: AppConfig) -> None:
@@ -51,29 +99,91 @@ def send_daily_reminder(cfg: AppConfig) -> None:
         return
 
     remaining = daily_goal - today_count
-    today_str = date.today().strftime("%B %d, %Y")
+    today_str = date.today().strftime("%A, %B %d, %Y")
+    quote = _get_daily_quote()
+    progress = _progress_bar(today_count, daily_goal)
 
     subject = f"Job Tracker: {remaining} more application{'s' if remaining != 1 else ''} needed today"
-    body = (
+
+    # HTML email
+    html = f"""\
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+
+  <h2 style="color: #2c3e50; margin-bottom: 5px;">Daily Application Reminder</h2>
+  <p style="color: #7f8c8d; margin-top: 0;">{today_str}</p>
+
+  <hr style="border: none; border-top: 2px solid #3498db; margin: 15px 0;">
+
+  <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+    <tr>
+      <td style="padding: 10px 15px; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+        <span style="color: #7f8c8d; font-size: 13px;">Applied Today</span><br>
+        <span style="font-size: 28px; font-weight: bold; color: #e74c3c;">{today_count}</span>
+      </td>
+      <td style="padding: 10px 15px; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+        <span style="color: #7f8c8d; font-size: 13px;">Daily Goal</span><br>
+        <span style="font-size: 28px; font-weight: bold; color: #2c3e50;">{daily_goal}</span>
+      </td>
+      <td style="padding: 10px 15px; background: #f8f9fa; border-radius: 8px 8px 0 0;">
+        <span style="color: #7f8c8d; font-size: 13px;">Remaining</span><br>
+        <span style="font-size: 28px; font-weight: bold; color: #e67e22;">{remaining}</span>
+      </td>
+    </tr>
+  </table>
+
+  <div style="background: #ecf0f1; border-radius: 10px; height: 20px; margin: 15px 0; overflow: hidden;">
+    <div style="background: linear-gradient(90deg, #3498db, #2ecc71); height: 100%; width: {min(today_count / max(daily_goal, 1) * 100, 100):.0f}%; border-radius: 10px; transition: width 0.3s;"></div>
+  </div>
+  <p style="text-align: center; color: #7f8c8d; font-size: 13px; margin-top: 5px;">
+    {min(today_count / max(daily_goal, 1) * 100, 100):.0f}% complete
+  </p>
+
+  <p style="font-size: 15px; color: #2c3e50; line-height: 1.5;">
+    You need to apply to <strong>{remaining} more job{'s' if remaining != 1 else ''}</strong> to hit your daily goal.
+  </p>
+
+  <div style="background: #fef9e7; border-left: 4px solid #f39c12; padding: 12px 15px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+    <p style="margin: 0; color: #7d6608; font-style: italic; font-size: 14px;">
+      "{quote}"
+    </p>
+  </div>
+
+  <hr style="border: none; border-top: 1px solid #ecf0f1; margin: 20px 0;">
+  <p style="color: #bdc3c7; font-size: 11px; text-align: center;">
+    Job Tracker Daily Reminder &bull; Goal: {daily_goal} applications/day
+  </p>
+
+</body>
+</html>"""
+
+    # Plain text fallback
+    plain = (
         f"Daily Application Reminder — {today_str}\n"
         f"{'=' * 45}\n\n"
-        f"Applied today:  {today_count}\n"
-        f"Daily goal:     {daily_goal}\n"
-        f"Remaining:      {remaining}\n\n"
+        f"  Progress:  {progress}\n\n"
+        f"  Applied today:  {today_count}\n"
+        f"  Daily goal:     {daily_goal}\n"
+        f"  Remaining:      {remaining}\n\n"
         f"You need to apply to {remaining} more job{'s' if remaining != 1 else ''} "
         f"to hit your daily goal.\n\n"
-        f"Keep going — consistency is key!\n"
+        f'"{quote}"\n'
     )
 
-    _send_gmail(email, app_password, subject, body)
+    _send_gmail(email, app_password, subject, plain, html)
 
 
-def _send_gmail(to_email: str, app_password: str, subject: str, body: str) -> None:
-    """Send a plain-text email via Gmail SMTP."""
-    msg = MIMEText(body)
+def _send_gmail(
+    to_email: str, app_password: str, subject: str, plain: str, html: str,
+) -> None:
+    """Send an HTML email with plain-text fallback via Gmail SMTP."""
+    msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = to_email
     msg["To"] = to_email
+
+    msg.attach(MIMEText(plain, "plain"))
+    msg.attach(MIMEText(html, "html"))
 
     context = ssl.create_default_context()
     try:
