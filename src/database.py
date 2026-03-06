@@ -248,7 +248,7 @@ class JobDB:
         - Sets applied_at on the first transition to "Applied".
         - Protected states (Applied/Interviewing/Offer) force is_visible=True.
         """
-        now = datetime.utcnow().isoformat()
+        now = datetime.now().isoformat()
 
         # Check if this is the first "Applied" transition
         row = self.conn.execute(

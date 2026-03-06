@@ -138,7 +138,7 @@ class SupabaseJobDB:
         - Sets applied_at on the first transition to "Applied".
         - Protected states force is_visible=True.
         """
-        now = datetime.utcnow().isoformat()
+        now = datetime.now().isoformat()
 
         resp = (
             self.client.table("jobs")
